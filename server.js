@@ -8,10 +8,12 @@ const courseRoute = require("./routes").course;
 const passport = require("passport");
 require("./config/passport")(passport);
 const cors = require("cors");
+const path = require("path");
+const port = process.env.PORT || 8080;
 
 // 連結至 mongoDB
 mongoose
-  .connect("mongodb://127.0.0.1:27017/mernDB")
+  .connect(process.env.MONGODB_PASSWORD)
   .then(() => {
     console.log("Connect to mongoDB successfully");
   })
@@ -23,6 +25,7 @@ mongoose
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
+app.use(express.static(path.join(__dirname, "client", "build")));
 
 app.use("/api/user", authRoute);
 // request header 中要有未經竄改過的 jwt (json web token) 才能進入 courseRoute (authorized)
@@ -32,6 +35,15 @@ app.use(
   courseRoute
 );
 
-app.listen(8080, () => {
-  console.log("backend server is running on port 8080");
+if (
+  process.env.NODE_ENV === "production" ||
+  process.env.NODE_ENV === "staging"
+) {
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "client", "build", "index.html"));
+  });
+}
+
+app.listen(port, () => {
+  console.log(`backend server is running on port ${port}`);
 });
